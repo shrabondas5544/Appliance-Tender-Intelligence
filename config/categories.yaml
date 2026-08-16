@@ -1,0 +1,171 @@
+# Category keyword rules & Ingestion Target Registry.
+# The system reloads this file on every run — edit keywords and targets freely.
+
+# --- Appliance Category Keywords (Bilingual: English + Bangla) ---
+air_conditioner:
+  - "air conditioner"
+  - "air-conditioner"
+  - "split ac"
+  - "split-type ac"
+  - "cassette ac"
+  - "residential ac"
+  - "inverter ac"
+  - "non-inverter ac"
+  - "non inverter ac"
+  - " a/c "
+  - "hvac"
+  - "chiller"
+  - "এয়ার কন্ডিশনার"
+  - "এসি"
+
+air_cooler:
+  - "air cooler"
+  - "air-cooler"
+  - "এয়ার কুলার"
+
+air_purifier:
+  - "air purifier"
+  - "air-purifier"
+  - "এয়ার পিউরিফায়ার"
+
+television:
+  - "television"
+  - "led tv"
+  - "dled"
+  - "nanocell"
+  - "oled"
+  - "qled"
+  - "smart tv"
+  - "uhd tv"
+  - "4k tv"
+  - "lcd tv"
+  - "টেলিভিশন"
+  - "টিভি"
+
+soundbar:
+  - "soundbar"
+  - "sound bar"
+  - "সাউন্ডবার"
+
+refrigerator:
+  - "refrigerator"
+  - "fridge"
+  - "frost"
+  - "no frost"
+  - "no-frost"
+  - "top mount"
+  - "multi-door"
+  - "multi door"
+  - "side-by-side"
+  - "side by side"
+  - "রেফ্রিজারেটর"
+  - "ফ্রিজ"
+
+freezer:
+  - "freezer"
+  - "deep freezer"
+  - "chest freezer"
+  - "upright freezer"
+  - "ফ্রিজার"
+  - "ডিপ ফ্রিজ"
+
+washing_machine:
+  - "washing machine"
+  - "washer"
+  - "front loading"
+  - "front load"
+  - "top loading"
+  - "top load"
+  - "ফ্রন্ট লোডিং"
+  - "টপ লোডিং"
+  - "ওয়াশিং মেশিন"
+
+fan:
+  - "fan"
+  - "fans"
+  - "ceiling fan"
+  - "ceiling fans"
+  - "rechargeable fan"
+  - "pedestal fan"
+  - "exhaust fan"
+  - "table fan"
+  - "সিলিং ফ্যান"
+  - "রিচার্জেবল ফ্যান"
+  - "ফ্যান"
+
+# --- Procurement Intent Verification Keywords ---
+intent_keywords:
+  - "tender"
+  - "tenders"
+  - "rfq"
+  - "rfp"
+  - "ift"
+  - "quotation"
+  - "procurement"
+  - "invitation for tender"
+  - "request for proposal"
+  - "request for quotation"
+  - "notice"
+  - "দরপত্র"
+  - "দরপত্র বিজ্ঞপ্তি"
+  - "কোটেশন"
+  - "বিজ্ঞপ্তি"
+  - "সংগ্রহ"
+  - "ক্রয়"
+  - "সরবরাহ"
+
+# --- Prioritization Thresholds ---
+thresholds:
+  high_value_bdt: 1000000        # >= 10 lakh BDT flagged HIGH_VALUE
+  high_quantity_units: 20        # >= 20 units flagged HIGH_VALUE
+  critical_days_to_close: 3      # closing within N days flagged CRITICAL
+
+# --- Ingestion Target Registry: Engine 1 (Direct Portals) ---
+portal_targets:
+  - name: "Prime Bank"
+    url: "https://www.primebank.com.bd/tenders"
+    parser_type: "html_table"
+    active: true
+  - name: "BRAC Bank"
+    url: "https://www.bracbank.com/en/tenders"
+    parser_type: "pdf_links"
+    active: true
+  - name: "Jamuna Bank"
+    url: "https://jamunabankbd.com/tenders"
+    parser_type: "html_table"
+    active: true
+  - name: "Dutch-Bangla Bank (DBBL)"
+    url: "https://www.dutchbanglabank.com/tender/tender.html"
+    parser_type: "dynamic_playwright"
+    active: true
+  - name: "Bangladesh Bank"
+    url: "https://www.bb.org.bd/mediaroom/tenders/tender.php"
+    parser_type: "html_table"
+    active: true
+
+# --- Ingestion Target Registry: Engine 2 (Daily E-Paper Sources) ---
+epaper_targets:
+  - name: "The Financial Express"
+    domain: "epaper.thefinancialexpress.com.bd"
+    url_template: "https://epaper.thefinancialexpress.com.bd/index.php?opt=view&page={page}&date={date}"
+    target_pages: ["Business", "Classified", "1", "2"]
+    language: "EN"
+    active: true
+  - name: "The Daily Star"
+    domain: "epaper.thedailystar.net"
+    url_template: "https://epaper.thedailystar.net/index.php?opt=view&page={page}&date={date}"
+    target_pages: ["Business", "Classified", "1"]
+    language: "EN"
+    active: true
+  - name: "Prothom Alo"
+    domain: "epaper.prothomalo.com"
+    url_template: "https://epaper.prothomalo.com/index.php?opt=view&page={page}&date={date}"
+    target_pages: ["বিজ্ঞপ্তি", "ব্যবসা-বাণিজ্য", "1", "2"]
+    language: "BN"
+    active: true
+  - name: "Bonik Barta"
+    domain: "epaper.bonikbarta.net"
+    url_template: "https://epaper.bonikbarta.net/index.php?opt=view&page={page}&date={date}"
+    target_pages: ["বিজ্ঞপ্তি", "1"]
+    language: "BN"
+    active: true

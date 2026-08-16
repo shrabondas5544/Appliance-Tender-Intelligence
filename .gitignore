@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# Environment variables (secret credentials)
+.env
+
+# Database and Caching
+data/*.db
+data/epaper_cache/
+
+# System logs
+logs/
+*.log
