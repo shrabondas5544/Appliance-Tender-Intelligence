@@ -27,7 +27,6 @@ class BaseScraper(ABC):
     def __init__(self, today_date: date | None = None) -> None:
         import datetime
         self.categories: Dict = load_categories()
-        self.thresholds: Dict = self.categories.get("thresholds", {})
         self.today_date = today_date or datetime.date.today()
 
     @abstractmethod
@@ -68,19 +67,5 @@ class BaseScraper(ABC):
             return None
 
     def apply_flags(self, record: TenderRecord) -> TenderRecord:
-        high_value_threshold = self.thresholds.get("high_value_bdt", 1_000_000)
-        high_qty_threshold = self.thresholds.get("high_quantity_units", 20)
-        critical_days = self.thresholds.get("critical_days_to_close", 3)
-
-        if (record.estimated_value_bdt or 0) >= high_value_threshold:
-            record.is_high_value = True
-        if (record.quantity or 0) >= high_qty_threshold:
-            record.is_high_value = True
-
-        if record.closing_date:
-            days_left = (record.closing_date - self.today_date).days
-            if 0 <= days_left <= critical_days:
-                record.is_critical = True
-
         return record
 

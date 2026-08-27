@@ -137,7 +137,7 @@ def get_unnotified_records() -> List[sqlite3.Row]:
     """Records not yet included in an email digest."""
     with get_conn() as conn:
         cur = conn.execute(
-            "SELECT * FROM tenders WHERE notified_at IS NULL ORDER BY is_critical DESC, is_high_value DESC, closing_date ASC"
+            "SELECT * FROM tenders WHERE notified_at IS NULL ORDER BY closing_date ASC, publish_date DESC"
         )
         return cur.fetchall()
 
@@ -151,3 +151,9 @@ def mark_notified(dedup_keys: List[str]) -> None:
             "UPDATE tenders SET notified_at = ? WHERE dedup_key = ?",
             [(now, k) for k in dedup_keys],
         )
+
+
+def clear_tenders_db() -> None:
+    """Clear all records from the tenders table."""
+    with get_conn() as conn:
+        conn.execute("DELETE FROM tenders")

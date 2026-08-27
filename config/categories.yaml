@@ -93,6 +93,144 @@ fan:
   - "রিচার্জেবল ফ্যান"
   - "ফ্যান"
 
+consumer_lighting:
+  - "consumer lighting"
+  - "led bright bulb"
+  - "led backup bulb"
+  - "led green bulb"
+  - "led bright power bulb"
+  - "led green power bulb"
+  - "led candle bulb"
+  - "led luster bulb"
+  - "gls bulb"
+  - "clear gls bulb"
+  - "led bulb"
+  - "bulb"
+  - "bulbs"
+  - "tube light"
+  - "tube lights"
+  - "tube light t8"
+  - "tube light t5"
+  - "slim batten"
+  - "batten light"
+  - "panel light"
+  - "panel lights"
+  - "conceal panel"
+  - "surface panel"
+  - "down light"
+  - "downlight"
+  - "spot light"
+  - "spotlight"
+  - "flood light"
+  - "floodlight"
+  - "এলইডি বাল্ব"
+  - "বাল্ব"
+  - "টিউব লাইট"
+  - "প্যানেল লাইট"
+  - "ডাউন লাইট"
+  - "স্পট লাইট"
+  - "ফ্লাড লাইট"
+
+commercial_lighting:
+  - "track light"
+  - "led track light"
+  - "street light"
+  - "led street light"
+  - "tunnel light"
+  - "led tunnel light"
+  - "স্ট্রিট লাইট"
+  - "ট্র্যাক লাইট"
+
+electrical_accessories:
+  - "electrical accessories"
+  - "pearl series"
+  - "gold series"
+  - "oslo series"
+  - "circuit breaker"
+  - "cricket breaker"
+  - "mcb"
+  - "mccb"
+  - "single pole"
+  - "double pole"
+  - "triple pole"
+  - "light holder"
+  - "hexagon holder"
+  - "octagon holder"
+  - "batten holder"
+  - "pendant holder"
+  - "2 pin plug"
+  - "3 pin plug"
+  - "8 pin socket"
+  - "plug"
+  - "socket"
+  - "switch"
+  - "switches"
+  - "সার্কিট ব্রেকার"
+  - "হোল্ডার"
+  - "সুইচ"
+  - "সকেট"
+  - "প্লাগ"
+
+small_appliances:
+  - "mosquito bat"
+  - "dry iron"
+  - "electric dry iron"
+  - "steam iron"
+  - "electric iron"
+  - "মশার ব্যাট"
+  - "ইস্ত্রি"
+  - "ইলেকট্রিক আয়রন"
+
+water_heater:
+  - "room heater"
+  - "water heater"
+  - "geyser"
+  - "water geyser"
+  - "fan heater"
+  - "রুম হিটার"
+  - "ওয়াটার হিটার"
+  - "গিজার"
+
+kitchen_appliances:
+  - "blender"
+  - "juicer"
+  - "mixer"
+  - "grinder"
+  - "toaster"
+  - "sandwich maker"
+  - "sandwich-maker"
+  - "electric kettle"
+  - "kettle"
+  - "coffee maker"
+  - "coffee machine"
+  - "ব্লেন্ডার"
+  - "জুসার"
+  - "মিক্সার"
+  - "গ্রাইন্ডার"
+  - "টোস্টার"
+  - "স্যান্ডউইচ মেকার"
+  - "ইলেকট্রিক কেটলি"
+  - "কেটলি"
+  - "কফি মেকার"
+
+cleaning_appliances:
+  - "vacuum cleaner"
+  - "vacuum-cleaner"
+  - "vacuum"
+  - "floor cleaner"
+  - "ভ্যাকুয়াম ক্লিনার"
+  - "ফ্লোর ক্লিনার"
+
+personal_care:
+  - "hair dryer"
+  - "hair styler"
+  - "shaver"
+  - "trimmer"
+  - "হেয়ার ড্রায়ার"
+  - "হেয়ার স্টাইলার"
+  - "শেভার"
+  - "ট্রিমার"
+
 # --- Procurement Intent Verification Keywords ---
 intent_keywords:
   - "tender"
@@ -113,12 +251,6 @@ intent_keywords:
   - "সংগ্রহ"
   - "ক্রয়"
   - "সরবরাহ"
-
-# --- Prioritization Thresholds ---
-thresholds:
-  high_value_bdt: 1000000        # >= 10 lakh BDT flagged HIGH_VALUE
-  high_quantity_units: 20        # >= 20 units flagged HIGH_VALUE
-  critical_days_to_close: 3      # closing within N days flagged CRITICAL
 
 # --- Ingestion Target Registry: Engine 1 (Direct Portals) ---
 portal_targets:
@@ -151,12 +283,6 @@ epaper_targets:
     target_pages: ["Business", "Classified", "1", "2"]
     language: "EN"
     active: true
-  - name: "The Daily Star"
-    domain: "epaper.thedailystar.net"
-    url_template: "https://epaper.thedailystar.net/index.php?opt=view&page={page}&date={date}"
-    target_pages: ["Business", "Classified", "1"]
-    language: "EN"
-    active: true
   - name: "Prothom Alo"
     domain: "epaper.prothomalo.com"
     url_template: "https://epaper.prothomalo.com/index.php?opt=view&page={page}&date={date}"
@@ -169,3 +295,7 @@ epaper_targets:
     target_pages: ["বিজ্ঞপ্তি", "1"]
     language: "BN"
     active: true
+
+
+
+    

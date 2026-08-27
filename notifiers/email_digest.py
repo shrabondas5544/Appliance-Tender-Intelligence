@@ -29,6 +29,14 @@ CATEGORY_LABELS = {
     "freezer": "Freezer / Deep Freezer",
     "washing_machine": "Washing Machine",
     "fan": "Fan (Ceiling / Rechargeable)",
+    "consumer_lighting": "Consumer Lighting (LED Bulbs, Tubes & Panels)",
+    "commercial_lighting": "Commercial & Outdoor Lighting (Street, Track & Tunnel)",
+    "electrical_accessories": "Electrical Accessories & Breakers",
+    "small_appliances": "Small Appliances (Dry Iron, Mosquito Bat)",
+    "water_heater": "Room & Water Heaters (Geyser)",
+    "kitchen_appliances": "Kitchen Appliances (Blender, Kettle, Toaster, Coffee Maker)",
+    "cleaning_appliances": "Cleaning Appliances (Vacuum & Floor Cleaner)",
+    "personal_care": "Personal Care (Hair Dryer, Shaver, Trimmer)",
 }
 
 
@@ -57,22 +65,13 @@ def build_html(rows: List[sqlite3.Row], today_date: Optional[date] = None) -> st
         if not r["closing_date"] or r["closing_date"] >= today_str
     ]
 
-    critical = _row_group(active_rows, lambda r: r["is_critical"])
-    high_value = _row_group(active_rows, lambda r: r["is_high_value"] and not r["is_critical"])
-    manual = _row_group(active_rows, lambda r: r["is_manual_tender"] and not r["is_critical"] and not r["is_high_value"])
-    standard = _row_group(
-        active_rows,
-        lambda r: not r["is_critical"] and not r["is_high_value"] and not r["is_manual_tender"],
-    )
-
-    def render_section(title: str, color: str, section_rows: List[sqlite3.Row]) -> str:
-        if not section_rows:
-            return ""
+    if not active_rows:
+        body = "<p>No new appliance tenders found today across e-GP, Direct Portals, and E-Paper OCR engines.</p>"
+    else:
         rows_html = ""
-        for r in section_rows:
+        for r in active_rows:
             category = CATEGORY_LABELS.get(r["category_matched"], r["category_matched"])
-            value = f"৳{r['estimated_value_bdt']:,.0f}" if r["estimated_value_bdt"] else "—"
-            qty = r["quantity"] if r["quantity"] else "—"
+            start_date = r["publish_date"] or "—"
             entity = r["procuring_entity"] or "—"
             closing = r["closing_date"] or "—"
             link = r["detail_url"] or "#"
@@ -84,43 +83,93 @@ def build_html(rows: List[sqlite3.Row], today_date: Optional[date] = None) -> st
 
             rows_html += f"""
             <tr>
-                <td style="padding:10px;border-bottom:1px solid #eee;">
+                <td class="col-tender" style="padding:10px;border-bottom:1px solid #eee;">
                     <div style="margin-bottom:4px;">{badge}</div>
                     <a href="{link}" style="color:#1a5276;text-decoration:none;font-weight:600;font-size:14px;">{r['title']}</a>
                     {ocr_conf}
                 </td>
-                <td style="padding:10px;border-bottom:1px solid #eee;">{category}</td>
-                <td style="padding:10px;border-bottom:1px solid #eee;">{entity}</td>
-                <td style="padding:10px;border-bottom:1px solid #eee;">{closing}</td>
-                <td style="padding:10px;border-bottom:1px solid #eee;">{value}</td>
-                <td style="padding:10px;border-bottom:1px solid #eee;">{qty}</td>
+                <td class="col-category" style="padding:10px;border-bottom:1px solid #eee;">
+                    <span class="mobile-label">Category: </span>{category}
+                </td>
+                <td class="col-entity" style="padding:10px;border-bottom:1px solid #eee;">
+                    <span class="mobile-label">Entity: </span>{entity}
+                </td>
+                <td class="col-start" style="padding:10px;border-bottom:1px solid #eee;">
+                    <span class="mobile-label">Start Date: </span>{start_date}
+                </td>
+                <td class="col-close" style="padding:10px;border-bottom:1px solid #eee;">
+                    <span class="mobile-label">Closing Date: </span>{closing}
+                </td>
             </tr>"""
-        return f"""
-        <h3 style="color:{color};margin-top:24px;">{title} ({len(section_rows)})</h3>
-        <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;">
-            <tr style="background:#f4f4f4;text-align:left;">
-                <th style="padding:8px;">Source & Tender</th>
-                <th style="padding:8px;">Category</th>
-                <th style="padding:8px;">Entity</th>
-                <th style="padding:8px;">Closing</th>
-                <th style="padding:8px;">Value</th>
-                <th style="padding:8px;">Qty</th>
-            </tr>
-            {rows_html}
+
+        body = f"""
+        <table class="responsive-table" style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;margin-top:16px;">
+            <thead>
+                <tr style="background:#f4f4f4;text-align:left;">
+                    <th style="padding:8px;">Source & Tender</th>
+                    <th style="padding:8px;">Category</th>
+                    <th style="padding:8px;">Entity</th>
+                    <th style="padding:8px;">Start Date</th>
+                    <th style="padding:8px;">Closing Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows_html}
+            </tbody>
         </table>"""
-
-    body = (
-        render_section("🔴 Critical — Closing Soon", "#c0392b", critical)
-        + render_section("🟠 High Value / High Quantity", "#e67e22", high_value)
-        + render_section("📋 Manual / Portal Tenders (offline or bank purchase)", "#7f8c8d", manual)
-        + render_section("🟢 Standard", "#27ae60", standard)
-    )
-
-    if not active_rows:
-        body = "<p>No new appliance tenders found today across e-GP, Direct Portals, and E-Paper OCR engines.</p>"
 
     return f"""
     <html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            @media screen and (max-width: 600px) {{
+                .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td {{
+                    display: block !important;
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                }}
+                .responsive-table thead {{
+                    display: none !important;
+                }}
+                .responsive-table tr {{
+                    border: 1px solid #e0e0e0 !important;
+                    border-radius: 8px !important;
+                    margin-bottom: 16px !important;
+                    padding: 12px !important;
+                    background: #ffffff !important;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
+                }}
+                .responsive-table td {{
+                    border: none !important;
+                    border-bottom: 1px solid #f0f0f0 !important;
+                    padding: 8px 0 !important;
+                    position: relative !important;
+                    text-align: left !important;
+                }}
+                .responsive-table td:last-child {{
+                    border-bottom: none !important;
+                }}
+                .responsive-table td.col-tender {{
+                    padding-bottom: 10px !important;
+                }}
+                .mobile-label {{
+                    display: inline-block !important;
+                    font-weight: bold !important;
+                    color: #555 !important;
+                    min-width: 95px !important;
+                    font-size: 12px !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.5px !important;
+                }}
+            }}
+            @media screen and (min-width: 601px) {{
+                .mobile-label {{
+                    display: none !important;
+                }}
+            }}
+        </style>
+    </head>
     <body style="font-family:Arial,sans-serif;color:#222;line-height:1.5;">
         <h2 style="color:#2c3e50;">Appliance Tender Intelligence — Dual-Engine Digest ({today_date.isoformat()})</h2>
         <p style="color:#555;">{len(active_rows)} new tender(s) captured across <b>e-GP</b>, <b>Direct Portals</b>, and <b>E-Paper Print OCR</b>.</p>

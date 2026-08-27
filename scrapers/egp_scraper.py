@@ -65,7 +65,11 @@ class EGPScraper(BaseScraper):
         # We search using primary appliance terms that match the categories
         search_keywords = [
             "air conditioner", "washing machine", "television", "refrigerator",
-            "freezer", "fan", "air cooler", "air purifier", "soundbar"
+            "freezer", "fan", "air cooler", "air purifier", "soundbar",
+            "bulb", "tube light", "panel light", "street light",
+            "circuit breaker", "switch", "socket", "electric iron", "mosquito bat",
+            "room heater", "water heater", "geyser", "blender", "toaster",
+            "vacuum cleaner", "kettle", "coffee maker", "hair dryer", "shaver", "trimmer"
         ]
         
         for kw in search_keywords:
