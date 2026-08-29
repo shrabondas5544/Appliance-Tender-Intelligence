@@ -1,7 +1,7 @@
 """
-Orchestrator — Dual-Engine Ingestion Pipeline runner (e-GP + Direct Portals + E-Paper OCR).
+Orchestrator — Portal Ingestion Pipeline runner (e-GP + Direct Bank/Corporate Portals).
 
-Flow: Run ACTIVE_SCRAPERS concurrently -> Save new records (dedup handled in db.py)
+Flow: Run ACTIVE_SCRAPERS -> Save new records (dedup handled in db.py)
       -> Pull unnotified/target date records -> Send HTML digest -> Mark as notified.
 
 Usage:
@@ -55,11 +55,11 @@ def _run_single_scraper(scraper_cls, target_date: date | None) -> List[TenderRec
 def run(target_date: date | None = None, start_date: date | None = None, end_date: date | None = None, egp_only: bool = False) -> None:
     init_db()
     if start_date and end_date:
-        logger.info("=== Dual-Engine Tender Scan Started (Date Range: %s to %s) ===", start_date, end_date)
+        logger.info("=== Portal Tender Scan Started (Date Range: %s to %s) ===", start_date, end_date)
     elif target_date:
-        logger.info("=== Dual-Engine Tender Scan Started (Simulated date: %s) ===", target_date)
+        logger.info("=== Portal Tender Scan Started (Simulated date: %s) ===", target_date)
     else:
-        logger.info("=== Dual-Engine Tender Scan Started ===")
+        logger.info("=== Portal Tender Scan Started ===")
 
     all_fetched_records: List[TenderRecord] = []
 
@@ -72,7 +72,7 @@ def run(target_date: date | None = None, start_date: date | None = None, end_dat
         all_fetched_records.extend(records)
 
     total_new = save_records(all_fetched_records)
-    logger.info("Total fetched across engines: %d | Total new records saved: %d", len(all_fetched_records), total_new)
+    logger.info("Total fetched across scrapers: %d | Total new records saved: %d", len(all_fetched_records), total_new)
 
     if start_date and end_date:
         import sqlite3
@@ -136,7 +136,7 @@ def run(target_date: date | None = None, start_date: date | None = None, end_dat
     else:
         logger.info("Nothing to notify.")
 
-    logger.info("=== Dual-Engine Tender Scan Finished ===")
+    logger.info("=== Portal Tender Scan Finished ===")
 
 
 if __name__ == "__main__":

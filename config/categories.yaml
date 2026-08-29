@@ -275,26 +275,7 @@ portal_targets:
     parser_type: "html_table"
     active: true
 
-# --- Ingestion Target Registry: Engine 2 (Daily E-Paper Sources) ---
-epaper_targets:
-  - name: "The Financial Express"
-    domain: "epaper.thefinancialexpress.com.bd"
-    url_template: "https://epaper.thefinancialexpress.com.bd/index.php?opt=view&page={page}&date={date}"
-    target_pages: ["Business", "Classified", "1", "2"]
-    language: "EN"
-    active: true
-  - name: "Prothom Alo"
-    domain: "epaper.prothomalo.com"
-    url_template: "https://epaper.prothomalo.com/index.php?opt=view&page={page}&date={date}"
-    target_pages: ["বিজ্ঞপ্তি", "ব্যবসা-বাণিজ্য", "1", "2"]
-    language: "BN"
-    active: true
-  - name: "Bonik Barta"
-    domain: "epaper.bonikbarta.net"
-    url_template: "https://epaper.bonikbarta.net/index.php?opt=view&page={page}&date={date}"
-    target_pages: ["বিজ্ঞপ্তি", "1"]
-    language: "BN"
-    active: true
+
 
 
 

@@ -1,13 +1,9 @@
 from scrapers.egp_scraper import EGPScraper
-from scrapers.epaper_ocr.financial_express import FinancialExpressScraper
-from scrapers.epaper_ocr.prothom_alo import ProthomAloScraper
-from scrapers.epaper_ocr.dhaka_tribune import DhakaTribuneScraper
+from scrapers.portal_scraper import PortalScraper
 
-# Active scrapers registry: Financial Express, Prothom Alo & Dhaka Tribune (Engine 2) + e-GP Scraper
+# Active portal scrapers registry: e-GP Portal Scraper & Direct Bank/Corporate Portal Scraper
 ACTIVE_SCRAPERS = [
-    FinancialExpressScraper,
-    ProthomAloScraper,
-    DhakaTribuneScraper,
     EGPScraper,
+    PortalScraper,
 ]
 

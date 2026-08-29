@@ -40,19 +40,11 @@ CATEGORY_LABELS = {
 }
 
 
-def _row_group(rows: List[sqlite3.Row], predicate) -> List[sqlite3.Row]:
-    return [r for r in rows if predicate(r)]
-
-
 def _get_source_badge(source_type: str, portal_name: str) -> str:
     s_type = (source_type or "EGP").upper()
     if s_type == "EGP":
         return f'<span style="background:#2980b9;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;">e-GP</span>'
-    elif s_type == "PORTAL":
-        return f'<span style="background:#8e44ad;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;">{portal_name}</span>'
-    elif s_type == "EPAPER_OCR":
-        return f'<span style="background:#d35400;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;">OCR: {portal_name}</span>'
-    return f'<span style="background:#7f8c8d;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;">{portal_name}</span>'
+    return f'<span style="background:#8e44ad;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;">{portal_name}</span>'
 
 
 def build_html(rows: List[sqlite3.Row], today_date: Optional[date] = None) -> str:
@@ -66,7 +58,7 @@ def build_html(rows: List[sqlite3.Row], today_date: Optional[date] = None) -> st
     ]
 
     if not active_rows:
-        body = "<p>No new appliance tenders found today across e-GP, Direct Portals, and E-Paper OCR engines.</p>"
+        body = "<p>No new appliance tenders found today across e-GP and Direct Portals.</p>"
     else:
         rows_html = ""
         for r in active_rows:
@@ -78,15 +70,11 @@ def build_html(rows: List[sqlite3.Row], today_date: Optional[date] = None) -> st
             s_type = r["source_type"] if "source_type" in r.keys() else "EGP"
             badge = _get_source_badge(s_type, r["source_portal"])
 
-            has_ocr = "ocr_confidence" in r.keys() and r["ocr_confidence"] is not None
-            ocr_conf = f"<br/><small style='color:#7f8c8d;'>OCR Conf: {r['ocr_confidence']}%</small>" if has_ocr else ""
-
             rows_html += f"""
             <tr>
                 <td class="col-tender" style="padding:10px;border-bottom:1px solid #eee;">
                     <div style="margin-bottom:4px;">{badge}</div>
                     <a href="{link}" style="color:#1a5276;text-decoration:none;font-weight:600;font-size:14px;">{r['title']}</a>
-                    {ocr_conf}
                 </td>
                 <td class="col-category" style="padding:10px;border-bottom:1px solid #eee;">
                     <span class="mobile-label">Category: </span>{category}
@@ -171,8 +159,8 @@ def build_html(rows: List[sqlite3.Row], today_date: Optional[date] = None) -> st
         </style>
     </head>
     <body style="font-family:Arial,sans-serif;color:#222;line-height:1.5;">
-        <h2 style="color:#2c3e50;">Appliance Tender Intelligence — Dual-Engine Digest ({today_date.isoformat()})</h2>
-        <p style="color:#555;">{len(active_rows)} new tender(s) captured across <b>e-GP</b>, <b>Direct Portals</b>, and <b>E-Paper Print OCR</b>.</p>
+        <h2 style="color:#2c3e50;">Appliance Tender Intelligence Digest ({today_date.isoformat()})</h2>
+        <p style="color:#555;">{len(active_rows)} new tender(s) captured across <b>e-GP</b> and <b>Direct Portals</b>.</p>
         {body}
     </body>
     </html>
