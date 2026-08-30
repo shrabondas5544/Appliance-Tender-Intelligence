@@ -278,6 +278,14 @@ portal_targets:
     url: "https://www.agranibank.org/index.php/home/notice"
     parser_type: "html_table"
     active: true
+  - name: "Janata Bank"
+    url: "https://www.jb.com.bd/home/tender/"
+    parser_type: "html_table"
+    active: true
+  - name: "DGDP (Defence Purchase)"
+    url: "https://dgdp.gov.bd/all-tender/all"
+    parser_type: "html_table"
+    active: true
 
 
 

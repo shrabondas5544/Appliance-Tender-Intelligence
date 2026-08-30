@@ -75,8 +75,12 @@ class PortalScraper(BaseScraper):
     def _scrape_html_table(self, portal_name: str, url: str) -> List[TenderRecord]:
         records: List[TenderRecord] = []
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=20)
-            resp.raise_for_status()
+            try:
+                resp = requests.get(url, headers=HEADERS, timeout=20)
+                resp.raise_for_status()
+            except requests.exceptions.SSLError:
+                resp = requests.get(url, headers=HEADERS, timeout=20, verify=False)
+                resp.raise_for_status()
         except Exception as exc:
             logger.warning("Could not fetch HTML portal [%s]: %s", portal_name, exc)
             return []
@@ -84,30 +88,52 @@ class PortalScraper(BaseScraper):
         soup = BeautifulSoup(resp.text, "html.parser")
         rows = soup.find_all("tr")
 
-        # Try to find header row dynamically
-        header_row = None
-        for r in rows:
-            if r.find("th"):
-                header_row = r
-                break
+        # Parse header map dynamically accounting for multi-row headers and rowspan/colspan
+        header_matrix = {}
+        for r_idx, r in enumerate(rows[:5]):
+            ths = r.find_all(["th", "td"])
+            if not ths or not any(c.name == "th" for c in ths):
+                continue
+            col_cursor = 0
+            for cell in ths:
+                while (r_idx, col_cursor) in header_matrix:
+                    col_cursor += 1
+                rowspan = int(cell.get("rowspan", 1))
+                colspan = int(cell.get("colspan", 1))
+                txt = cell.get_text(" ", strip=True).lower()
+                for rs in range(rowspan):
+                    for cs in range(colspan):
+                        pos = (r_idx + rs, col_cursor + cs)
+                        prev = header_matrix.get(pos, "")
+                        header_matrix[pos] = f"{prev} {txt}".strip()
+                col_cursor += colspan
+
+        max_col = max((c for r, c in header_matrix.keys()), default=-1)
+        max_row = max((r for r, c in header_matrix.keys()), default=-1)
 
         pub_idx = -1
         close_idx = -1
         title_idx = -1
+        entity_idx = -1
 
-        if header_row:
-            headers = [c.get_text(" ", strip=True).lower() for c in header_row.find_all(["th", "td"])]
-            for idx, h in enumerate(headers):
-                if any(x in h for x in ["publish", "posted", "start", "issue"]):
-                    pub_idx = idx
-                elif any(x in h for x in ["last date", "closing", "deadline", "submission", "close"]):
-                    close_idx = idx
-                elif any(x in h for x in ["title", "description", "subject", "notice", "details"]):
-                    title_idx = idx
+        if max_col >= 0:
+            for c in range(max_col + 1):
+                h_text = " ".join([header_matrix.get((r, c), "") for r in range(max_row + 1)]).strip()
+                if not h_text:
+                    continue
+                if any(x in h_text for x in ["publish", "posted", "start", "issue", "from"]) and pub_idx == -1:
+                    pub_idx = c
+                if (any(x in h_text for x in ["last date", "closing", "deadline", "submission", "close"]) or "to" in h_text.split()) and close_idx == -1:
+                    close_idx = c
+                if any(x in h_text for x in ["title", "description", "subject", "notice", "details", "tender name", "name"]) and title_idx == -1:
+                    title_idx = c
+                if any(x in h_text for x in ["offered", "entity", "department", "dept", "procuring", "organization", "branch", "section", "wing"]) and entity_idx == -1:
+                    entity_idx = c
 
         for r in rows:
             cells = r.find_all(["td", "th"])
-            if len(cells) < 2 or r == header_row:
+            # Skip header rows, search/filter rows, or rows with too few cells
+            if len(cells) < 2 or any(c.name == "th" for c in cells):
                 continue
 
             row_text = " ".join([c.get_text(" ", strip=True) for c in cells])
@@ -116,7 +142,7 @@ class PortalScraper(BaseScraper):
                 continue
 
             # Determine column mapping indices for this row
-            p_idx, c_idx, t_idx = pub_idx, close_idx, title_idx
+            p_idx, c_idx, t_idx, e_idx = pub_idx, close_idx, title_idx, entity_idx
             
             if p_idx == -1 or t_idx == -1:
                 # Fallback to positional heuristics if not resolved by headers
@@ -187,6 +213,12 @@ class PortalScraper(BaseScraper):
                 if age_days > 30:
                     continue
 
+            procuring_entity = portal_name
+            if e_idx != -1 and e_idx < len(cells):
+                dept_text = cells[e_idx].get_text(" ", strip=True)
+                if dept_text and len(dept_text) > 2:
+                    procuring_entity = f"{portal_name} ({dept_text})"
+
             record = TenderRecord(
                 tender_id=self._generate_id(portal_name, title, detail_url),
                 source_portal=portal_name,
@@ -194,7 +226,7 @@ class PortalScraper(BaseScraper):
                 source_language="EN" if any(c.isascii() for c in title) else "BN",
                 title=title,
                 category_matched=category,
-                procuring_entity=portal_name,
+                procuring_entity=procuring_entity,
                 publish_date=publish_date,
                 closing_date=closing_date,
                 estimated_value_bdt=self.extract_value_bdt(row_text),
