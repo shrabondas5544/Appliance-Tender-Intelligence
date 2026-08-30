@@ -286,6 +286,10 @@ portal_targets:
     url: "https://dgdp.gov.bd/all-tender/all"
     parser_type: "html_table"
     active: true
+  - name: "UCEP Bangladesh"
+    url: "https://tender.ucepbd.org/"
+    parser_type: "kv_cards"
+    active: true
 
 
 

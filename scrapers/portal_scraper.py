@@ -21,7 +21,10 @@ from typing import List, Optional
 from urllib.parse import urljoin
 
 import requests
+import urllib3
 from bs4 import BeautifulSoup
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from core.models import TenderRecord
 from scrapers.base import BaseScraper
@@ -61,6 +64,8 @@ class PortalScraper(BaseScraper):
                     parsed = self._scrape_pdf_links(name, url)
                 elif parser_type == "dynamic_playwright":
                     parsed = self._scrape_dynamic_playwright(name, url)
+                elif parser_type == "kv_cards":
+                    parsed = self._scrape_kv_cards(name, url)
                 else:
                     parsed = self._scrape_html_table(name, url)
 
@@ -335,6 +340,107 @@ class PortalScraper(BaseScraper):
         except Exception as exc:
             logger.info("Playwright not active for [%s], falling back to HTML table parser: %s", portal_name, exc)
             return self._scrape_html_table(portal_name, url)
+
+    def _scrape_kv_cards(self, portal_name: str, url: str) -> List[TenderRecord]:
+        records: List[TenderRecord] = []
+        try:
+            try:
+                resp = requests.get(url, headers=HEADERS, timeout=20)
+                resp.raise_for_status()
+            except requests.exceptions.SSLError:
+                resp = requests.get(url, headers=HEADERS, timeout=20, verify=False)
+                resp.raise_for_status()
+        except Exception as exc:
+            logger.warning("Could not fetch KV card portal [%s]: %s", portal_name, exc)
+            return []
+
+        soup = BeautifulSoup(resp.text, "html.parser")
+        cards = [
+            c for c in soup.find_all("div", class_=lambda x: x and "card" in x)
+            if "publishing date" in c.get_text().lower() or "closing date" in c.get_text().lower()
+        ]
+
+        seen_ids = set()
+
+        for card in cards:
+            card_text = card.get_text(" ", strip=True)
+            category = self.match_category(card_text)
+            if not category:
+                continue
+
+            # Title extraction: look for top heading tag
+            heading = card.find(["h1", "h2", "h3", "h4", "h5", "u", "a"])
+            title = heading.get_text(" ", strip=True) if heading else card_text[:200]
+            if len(title) < 10:
+                title = card_text[:200]
+
+            title = re.sub(r"^\d+\s+(?:\d{4}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]+\s+\d{4})\s*", "", title).strip()
+
+            # Detail URL extraction
+            link_tag = card.find("a", href=True)
+            detail_url = urljoin(url, link_tag["href"]) if link_tag else url
+
+            tender_id = self._generate_id(portal_name, title, detail_url)
+            if tender_id in seen_ids:
+                continue
+            seen_ids.add(tender_id)
+
+            publish_date = self.today_date
+            closing_date = None
+            procuring_entity = portal_name
+
+            # Key-value table parsing inside card
+            rows = card.find_all("tr")
+            for r in rows:
+                cells = r.find_all(["td", "th"])
+                if len(cells) < 2:
+                    continue
+                k = cells[0].get_text(" ", strip=True).lower()
+                v = cells[1].get_text(" ", strip=True)
+
+                if "publishing" in k or "posted" in k or "start" in k:
+                    parsed_pub = self._parse_single_date(v)
+                    if parsed_pub:
+                        publish_date = parsed_pub
+                elif "closing" in k or "last date" in k or "deadline" in k:
+                    parsed_close = self._parse_single_date(v)
+                    if parsed_close:
+                        closing_date = parsed_close
+                elif "location" in k or "procuring" in k or "entity" in k:
+                    if v and len(v) > 2:
+                        procuring_entity = f"{portal_name} ({v[:80]})"
+
+            if not closing_date:
+                closing_date = self._extract_date(card_text)
+
+            # Skip expired tenders
+            if closing_date and closing_date < self.today_date:
+                continue
+
+            if not closing_date and publish_date:
+                age_days = (self.today_date - publish_date).days
+                if age_days > 30:
+                    continue
+
+            record = TenderRecord(
+                tender_id=tender_id,
+                source_portal=portal_name,
+                source_type="PORTAL",
+                source_language="EN" if any(c.isascii() for c in title) else "BN",
+                title=title,
+                category_matched=category,
+                procuring_entity=procuring_entity,
+                publish_date=publish_date,
+                closing_date=closing_date,
+                estimated_value_bdt=self.extract_value_bdt(card_text),
+                quantity=self.extract_quantity(card_text),
+                detail_url=detail_url,
+                is_manual_tender="hardcopy" in card_text.lower() or "manual" in card_text.lower(),
+                raw_snippet=card_text[:500],
+            )
+            records.append(self.apply_flags(record))
+
+        return records
 
     # --- Helpers ---
 
