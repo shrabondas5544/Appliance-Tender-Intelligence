@@ -172,22 +172,11 @@ epaper_targets:
 
 ---
 
-## 📅 Deployment & Automated Execution (GitHub Actions)
+## 📅 Deployment (VPS Cron Job)
 
-This project uses **GitHub Actions** for daily scheduled execution (6:00 AM BDT). Whenever you push new code or update `config/categories.yaml` on GitHub, the workflow automatically runs the updated code on schedule!
+To schedule the script to run daily at 7:00 AM, add the following cron job on your VPS (`crontab -e`):
 
-### 1. Configure GitHub Repository Secrets
-Go to your GitHub repo -> **Settings -> Secrets and variables -> Actions** and add the following secrets:
-
-* `SMTP_HOST`: `smtp.gmail.com`
-* `SMTP_PORT`: `587`
-* `SMTP_USERNAME`: `your_gmail_address`
-* `SMTP_APP_PASSWORD`: `your_gmail_app_password`
-* `EMAIL_FROM`: `your_gmail_address`
-* `EMAIL_TO`: `recipient1@domain.com,recipient2@domain.com`
-
-### 2. Automatic Updates
-* On every scheduled run (00:00 UTC / 06:00 AM BDT), GitHub Actions clones the latest code, installs Tesseract OCR + Bangla data packs, runs `main.py`, and sends the HTML digest.
-* The workflow commits the updated `data/tenders.db` back to `main` to preserve deduplication state across runs.
-* You can also trigger manual runs anytime under **Actions -> Daily Tender Scan & Auto Digest -> Run workflow**.
+```cron
+0 7 * * * cd /home/user/Downloads/tender-intel && ./venv/bin/python main.py >> /home/user/Downloads/tender-intel/logs/cron.log 2>&1
+```
 

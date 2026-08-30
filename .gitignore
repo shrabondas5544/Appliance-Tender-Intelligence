@@ -14,7 +14,7 @@ env/
 .env
 
 # Database and Caching
-# Keep tenders.db tracked for GitHub Actions persistence
+data/*.db
 data/epaper_cache/
 
 

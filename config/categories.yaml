@@ -274,6 +274,10 @@ portal_targets:
     url: "https://www.bb.org.bd/mediaroom/tenders/tender.php"
     parser_type: "html_table"
     active: true
+  - name: "Agrani Bank"
+    url: "https://www.agranibank.org/index.php/home/notice"
+    parser_type: "html_table"
+    active: true
 
 
 

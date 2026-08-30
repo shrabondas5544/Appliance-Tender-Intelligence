@@ -84,9 +84,30 @@ class PortalScraper(BaseScraper):
         soup = BeautifulSoup(resp.text, "html.parser")
         rows = soup.find_all("tr")
 
+        # Try to find header row dynamically
+        header_row = None
+        for r in rows:
+            if r.find("th"):
+                header_row = r
+                break
+
+        pub_idx = -1
+        close_idx = -1
+        title_idx = -1
+
+        if header_row:
+            headers = [c.get_text(" ", strip=True).lower() for c in header_row.find_all(["th", "td"])]
+            for idx, h in enumerate(headers):
+                if any(x in h for x in ["publish", "posted", "start", "issue"]):
+                    pub_idx = idx
+                elif any(x in h for x in ["last date", "closing", "deadline", "submission", "close"]):
+                    close_idx = idx
+                elif any(x in h for x in ["title", "description", "subject", "notice", "details"]):
+                    title_idx = idx
+
         for r in rows:
             cells = r.find_all(["td", "th"])
-            if len(cells) < 2:
+            if len(cells) < 2 or r == header_row:
                 continue
 
             row_text = " ".join([c.get_text(" ", strip=True) for c in cells])
@@ -94,29 +115,87 @@ class PortalScraper(BaseScraper):
             if not category:
                 continue
 
+            # Determine column mapping indices for this row
+            p_idx, c_idx, t_idx = pub_idx, close_idx, title_idx
+            
+            if p_idx == -1 or t_idx == -1:
+                # Fallback to positional heuristics if not resolved by headers
+                if len(cells) >= 4:
+                    p_idx = 1
+                    c_idx = 2
+                    t_idx = 3
+                elif len(cells) == 3:
+                    date_1 = self._parse_single_date(cells[1].get_text(" ", strip=True))
+                    date_2 = self._parse_single_date(cells[2].get_text(" ", strip=True))
+                    if date_1 and not date_2:
+                        p_idx = 1
+                        t_idx = 2
+                        c_idx = -1
+                    elif date_2:
+                        t_idx = 1
+                        c_idx = 2
+                        p_idx = -1
+                    else:
+                        t_idx = 1
+                        c_idx = -1
+                        p_idx = -1
+                else:
+                    t_idx = 0
+                    p_idx = -1
+                    c_idx = -1
+
+            # Extract cell values using mapped indices
+            publish_date = self.today_date
+            closing_date = None
+
+            if p_idx != -1 and p_idx < len(cells):
+                parsed_pub = self._parse_single_date(cells[p_idx].get_text(" ", strip=True))
+                if parsed_pub:
+                    publish_date = parsed_pub
+
+            if c_idx != -1 and c_idx < len(cells):
+                parsed_close = self._parse_single_date(cells[c_idx].get_text(" ", strip=True))
+                if parsed_close:
+                    closing_date = parsed_close
+
             # Extract tender title and link if available
             link_tag = r.find("a", href=True)
             detail_url = urljoin(url, link_tag["href"]) if link_tag else url
-            title = link_tag.get_text(" ", strip=True) if link_tag else cells[0].get_text(" ", strip=True)
+            
+            if t_idx != -1 and t_idx < len(cells):
+                title = cells[t_idx].get_text(" ", strip=True)
+            else:
+                title = link_tag.get_text(" ", strip=True) if link_tag else cells[0].get_text(" ", strip=True)
 
             if len(title) < 10:
                 title = row_text[:200]
 
-            tender_id = self._generate_id(portal_name, title, detail_url)
-            closing_date = self._extract_date(row_text)
+            # Strip leading serial numbers & dates from title if present
+            title = re.sub(r"^\d+\s+(?:\d{4}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]+\s+\d{4})\s*", "", title).strip()
+            title = re.sub(r"^(?:\d{4}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]+\s+\d{4})\s*", "", title).strip()
 
+            if not closing_date:
+                closing_date = self._extract_date(row_text)
+
+            # Skip expired tenders
             if closing_date and closing_date < self.today_date:
                 continue
 
+            # Skip if no closing date is available and the publish date is older than 30 days
+            if not closing_date and publish_date:
+                age_days = (self.today_date - publish_date).days
+                if age_days > 30:
+                    continue
+
             record = TenderRecord(
-                tender_id=tender_id,
+                tender_id=self._generate_id(portal_name, title, detail_url),
                 source_portal=portal_name,
                 source_type="PORTAL",
                 source_language="EN" if any(c.isascii() for c in title) else "BN",
                 title=title,
                 category_matched=category,
                 procuring_entity=portal_name,
-                publish_date=self.today_date,
+                publish_date=publish_date,
                 closing_date=closing_date,
                 estimated_value_bdt=self.extract_value_bdt(row_text),
                 quantity=self.extract_quantity(row_text),
@@ -262,6 +341,15 @@ class PortalScraper(BaseScraper):
         if m:
             return m.group(1)
         return hashlib.sha1(f"{portal}{title}{link}".encode("utf-8")).hexdigest()[:12]
+
+    def _parse_single_date(self, text: str) -> Optional[date]:
+        if not text:
+            return None
+        from dateutil import parser as dateparser
+        try:
+            return dateparser.parse(text.strip(), dayfirst=True).date()
+        except Exception:
+            return self._extract_date(text)
 
     def _extract_date(self, text: str) -> Optional[date]:
         m = re.search(r"(?:last date|closing date|deadline|submission date)[:\s]*([0-9]{1,2}[\-/][0-9]{1,2}[\-/][0-9]{2,4})", text, re.IGNORECASE)
